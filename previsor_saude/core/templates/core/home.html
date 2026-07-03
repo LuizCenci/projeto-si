@@ -1,0 +1,110 @@
+{% extends "core/base.html" %}
+
+{% block content %}
+
+    <section class="card intro-card">
+        <h1>Como você está se sentindo com os estudos?</h1>
+        <p>
+            Responda ao questionário rápido abaixo sobre seus hábitos, sintomas
+            e rotina acadêmica. Suas respostas serão enviadas ao nosso módulo
+            de predição — treinado previamente com dados de estresse de
+            estudantes — que retornará uma classificação do seu nível de
+            estresse: <strong>Baixo</strong>, <strong>Médio</strong> ou
+            <strong>Alto</strong>, junto com uma orientação personalizada.
+        </p>
+    </section>
+
+    {% if resultado %}
+    <section class="card resultado-card resultado--{{ resultado.nivel|lower }}" id="resultado">
+        <div class="resultado-icone">
+            {% if resultado.nivel == "BAIXO" %}
+                🙂
+            {% elif resultado.nivel == "MEDIO" %}
+                😐
+            {% else %}
+                😟
+            {% endif %}
+        </div>
+        <h2>Nível de estresse previsto: {{ resultado.nivel_display }}</h2>
+        <p class="resultado-mensagem">{{ resultado.mensagem }}</p>
+        <p class="resultado-confianca">
+            Confiança estimada da predição: <strong>{{ resultado.confianca }}%</strong>
+        </p>
+        {% if resultado.nome %}
+            <p class="resultado-nome">Obrigado por responder, {{ resultado.nome }}!</p>
+        {% endif %}
+        <p class="resultado-aviso">
+            Este resultado é gerado por um modelo estatístico com fins
+            educacionais e não substitui uma avaliação profissional de
+            saúde.
+        </p>
+    </section>
+    {% endif %}
+
+    <section class="card form-card">
+        <h2>Questionário de bem-estar acadêmico</h2>
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-field">
+                {{ form.nome_estudante.label_tag }}
+                {{ form.nome_estudante }}
+            </div>
+
+            <div class="form-grid">
+                <div class="form-field">
+                    {{ form.horas_sono.label_tag }}
+                    {{ form.horas_sono }}
+                    {% if form.horas_sono.errors %}
+                        <p class="field-error">{{ form.horas_sono.errors|striptags }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    {{ form.carga_estudo.label_tag }}
+                    {{ form.carga_estudo }}
+                    {% if form.carga_estudo.errors %}
+                        <p class="field-error">{{ form.carga_estudo.errors|striptags }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="form-field">
+                    {{ form.frequencia_dor_cabeca.label_tag }}
+                    {{ form.frequencia_dor_cabeca }}
+                </div>
+
+                <div class="form-field">
+                    {{ form.nivel_atividade_fisica.label_tag }}
+                    {{ form.nivel_atividade_fisica }}
+                </div>
+
+                <div class="form-field">
+                    {{ form.qualidade_sono.label_tag }}
+                    {{ form.qualidade_sono }}
+                </div>
+
+                <div class="form-field">
+                    {{ form.nivel_ansiedade.label_tag }}
+                    {{ form.nivel_ansiedade }}
+                </div>
+
+                <div class="form-field">
+                    {{ form.pressao_prazos.label_tag }}
+                    {{ form.pressao_prazos }}
+                </div>
+
+                <div class="form-field">
+                    {{ form.frequencia_cansaco.label_tag }}
+                    {{ form.frequencia_cansaco }}
+                </div>
+            </div>
+
+            <p class="escala-hint">
+                * Nas escalas de 0 a 5: 0 = nunca/nenhum(a), 5 = sempre/extremo(a).
+            </p>
+
+            <button type="submit" class="btn-primary">Avaliar meu nível de estresse</button>
+        </form>
+    </section>
+
+{% endblock %}

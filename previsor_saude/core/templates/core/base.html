@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Previsor de Bem-Estar Acadêmico{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+</head>
+<body>
+    <header class="app-header">
+        <div class="container">
+            <div class="brand">
+                <span class="brand-icon">🧠</span>
+                <span class="brand-name">Previsor de Bem-Estar Acadêmico</span>
+            </div>
+            <p class="brand-subtitle">
+                Monitoramento preditivo do nível de estresse de estudantes universitários
+            </p>
+        </div>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="app-footer">
+        <div class="container">
+            <p>
+                MVP acadêmico &middot; Predição baseada em modelo previamente treinado
+                com o dataset <em>Student Stress Monitoring Datasets</em>.
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

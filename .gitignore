@@ -11,6 +11,9 @@ ENV/
 
 # Python cache and build artifacts
 __pycache__/
+*.pyc
+db.sqlite3
+.DS_Store
 *.py[cod]
 *$py.class
 .pytest_cache/
