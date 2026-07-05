@@ -1,0 +1,143 @@
+{% extends "core/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="dash-header">
+    <h2>Dashboard</h2>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="gerar_formulario" class="btn btn-primary">+ Novo Formulario</button>
+    </form>
+</div>
+
+<div class="stats">
+    <div class="stat">
+        <span class="stat-num">{{ total_respostas }}</span>
+        <span class="stat-label">Respostas</span>
+    </div>
+    <div class="stat">
+        <span class="stat-num">{{ formularios|length }}</span>
+        <span class="stat-label">Formularios</span>
+    </div>
+</div>
+
+{% if distribuicao %}
+<div class="card">
+    <h3>Distribuicao por Risco</h3>
+    {% for item in distribuicao %}
+    <div class="risk-bar">
+        <span class="risk-bar-label">{{ item.nivel_risco|default:"—" }}</span>
+        <div class="risk-bar-track">
+            <div class="risk-bar-fill bg-{{ item.nivel_risco|lower }}" style="width:{% widthratio item.total total_respostas 100 %}%;">
+                {{ item.total }}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if turmas %}
+<div class="card">
+    <h3>Respostas por Turma</h3>
+    <table>
+        <thead>
+            <tr><th>Turma</th><th>Respostas</th></tr>
+        </thead>
+        <tbody>
+            {% for t in turmas %}
+            <tr><td>{{ t.turma }}</td><td>{{ t.total }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>Formularios</h3>
+    {% if formularios %}
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Criado</th>
+                <th>Validade</th>
+                <th>Status</th>
+                <th>Link</th>
+                <th>Respostas</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in formularios %}
+            {% url 'core:formulario_estudante' pk=f.id as rel_link %}
+            <tr class="{% if not f.esta_valido %}row-expired{% endif %}">
+                <td><code>{{ f.id|truncatechars:8 }}</code></td>
+                <td>{{ f.criado_em|date:"d/m/Y" }}</td>
+                <td>{{ f.validade|date:"d/m/Y" }}</td>
+                <td>
+                    {% if f.esta_valido %}
+                        <span class="risk-badge risk-baixo">Ativo</span>
+                    {% else %}
+                        <span class="risk-badge risk-alto">Expirado</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if f.esta_valido %}
+                    <div class="link-group">
+                        <input class="link-input" value="{{ base_url }}{{ rel_link }}" readonly>
+                        <button class="btn btn-copy" onclick="copiar(this)">Copiar</button>
+                    </div>
+                    {% endif %}
+                </td>
+                <td>{{ f.respostas.count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty">Nenhum formulario ainda. Clique em "Novo Formulario" para comecar.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>Ultimas Respostas</h3>
+    {% if respostas %}
+    <table>
+        <thead>
+            <tr>
+                <th>Aluno</th>
+                <th>RA</th>
+                <th>Turma</th>
+                <th>Risco</th>
+                <th>Data</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in respostas %}
+            <tr>
+                <td>{{ r.nome_aluno }}</td>
+                <td>{{ r.ra }}</td>
+                <td>{{ r.turma }}</td>
+                <td><span class="risk-badge risk-{{ r.nivel_risco|lower }}">{{ r.get_nivel_risco_display }}</span></td>
+                <td>{{ r.data_submissao|date:"d/m/Y H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty">Nenhuma resposta recebida.</p>
+    {% endif %}
+</div>
+
+<script>
+function copiar(botao) {
+    var input = botao.parentElement.querySelector('.link-input');
+    input.select();
+    navigator.clipboard.writeText(input.value).then(function() {
+        var txt = botao.textContent;
+        botao.textContent = 'Copiado!';
+        botao.classList.add('btn-copied');
+        setTimeout(function() { botao.textContent = txt; botao.classList.remove('btn-copied'); }, 2000);
+    });
+}
+</script>
+{% endblock %}

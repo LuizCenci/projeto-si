@@ -1,0 +1,42 @@
+{% extends "core/base.html" %}
+{% block title %}Bem-Estar Academico{% endblock %}
+{% block content %}
+<div class="landing">
+    <div class="hero">
+        <h1>Monitoramento de Bem-Estar</h1>
+        <p class="hero-sub">Sistema inteligente para coleta e analise de indicadores de saude emocional de estudantes.</p>
+        <div class="hero-actions">
+            <a href="{% url 'core:login' %}" class="btn btn-primary">Acessar Plataforma</a>
+        </div>
+    </div>
+
+    <div class="features">
+        <div class="feature">
+            <div class="feature-icon">&#x1F4CB;</div>
+            <h3>Formularios Inteligentes</h3>
+            <p>Gere formularios com links unicos e temporarios para coleta de dados dos alunos.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">&#x1F916;</div>
+            <h3>Analise Preditiva</h3>
+            <p>Modelo de machine learning com alta precisao para classificar niveis de estresse.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">&#x1F4CA;</div>
+            <h3>Dashboard Analitico</h3>
+            <p>Visualizacao de metricas, distribuicao de risco e estatisticas por turma.</p>
+        </div>
+    </div>
+
+    <div class="card how-it-works">
+        <h2>Fluxo de uso</h2>
+        <ol class="steps">
+            <li><span class="step-num">1</span> <strong>Diretor acessa a plataforma</strong> &mdash; Login com conta institucional.</li>
+            <li><span class="step-num">2</span> <strong>Gera um formulario</strong> &mdash; Link unico com validade de 2 semanas e criado.</li>
+            <li><span class="step-num">3</span> <strong>Compartilha com os alunos</strong> &mdash; Copie o link e envie para as turmas.</li>
+            <li><span class="step-num">4</span> <strong>Alunos respondem</strong> &mdash; Dados pessoais e 20 indicadores comportamentais.</li>
+            <li><span class="step-num">5</span> <strong>Resultados no dashboard</strong> &mdash; Metricas agregadas disponiveis em tempo real.</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

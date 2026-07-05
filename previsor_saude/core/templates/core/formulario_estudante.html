@@ -1,0 +1,234 @@
+{% extends "core/base.html" %}
+{% block title %}Questionario{% endblock %}
+{% block content %}
+<div class="student-form-page">
+    {% if resultado %}
+    <div class="result-card">
+        <div class="result-icon">{% if resultado.nivel == 0 %}<span style="font-size:3rem;">&#x1F60A;</span>{% elif resultado.nivel == 1 %}<span style="font-size:3rem;">&#x1F610;</span>{% else %}<span style="font-size:3rem;">&#x1F61F;</span>{% endif %}</div>
+        <h2>Ola, {{ resultado.nome }}!</h2>
+        <p class="result-subtitle">Seu resultado foi processado.</p>
+        <div class="result-level">
+            <span class="risk-badge risk-{{ resultado.nivel_risco|lower }} large">
+                {% if resultado.nivel == 0 %}Baixo{% elif resultado.nivel == 1 %}Medio{% else %}Alto{% endif %}
+            </span>
+        </div>
+        <p class="result-message">{{ resultado.mensagem }}</p>
+        <p class="result-footer">Procure a coordenacao do seu curso se precisar de apoio.</p>
+    </div>
+
+    {% elif ja_respondeu %}
+    <div class="card" style="text-align:center;padding:40px;">
+        <h2>Voce ja respondeu este formulario</h2>
+        <p>Cada aluno pode responder apenas uma vez por formulario.</p>
+        <p>Caso precise refazer, entre em contato com a coordenacao.</p>
+    </div>
+
+    {% else %}
+    <div class="form-header">
+        <h2>Questionario de Bem-Estar</h2>
+        <p>Preencha os campos abaixo. Suas respostas sao confidenciais.</p>
+    </div>
+
+    {% if form.errors %}
+    <div class="form-errors">
+        {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+                <p>{{ field }}: {{ error }}</p>
+            {% endfor %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" class="styled-form" id="mainForm">
+        {% csrf_token %}
+
+        <div class="scale-info">
+            <strong>Escala:</strong> 0 = Discordo totalmente / Nada frequente &nbsp;|&nbsp; 5 = Concordo totalmente / Muito frequente
+            <br><span style="font-size:0.8rem;color:var(--muted);">Deixe em branco caso nao saiba responder (sera considerado valor neutro).</span>
+        </div>
+
+        <div class="form-section">
+            <h3>Identificacao</h3>
+            <div class="form-row thirds">
+                <div class="form-group">
+                    <label for="id_nome_aluno">Nome completo</label>
+                    {{ form.nome_aluno }}
+                </div>
+                <div class="form-group">
+                    <label for="id_ra">RA</label>
+                    {{ form.ra }}
+                </div>
+                <div class="form-group">
+                    <label for="id_turma">Turma</label>
+                    {{ form.turma }}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Fatores Emocionais</h3>
+            <div class="question-grid">
+                <div class="q-item">
+                    <label>Ansiedade <span class="q-desc">Nivel de preocupacao, nervosismo ou tensao no dia a dia</span></label>
+                    {{ form.anxiety_level }}
+                </div>
+                <div class="q-item">
+                    <label>Autoestima <span class="q-desc">O quanto voce se valoriza e confia em si mesmo</span></label>
+                    {{ form.self_esteem }}
+                </div>
+                <div class="q-item">
+                    <label>Historico de saude mental <span class="q-desc">Ja teve ou tem acompanhamento psicologico</span></label>
+                    {{ form.mental_health_history }}
+                </div>
+                <div class="q-item">
+                    <label>Depressao <span class="q-desc">Frequencia de tristeza, desanimo ou falta de interesse</span></label>
+                    {{ form.depression }}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Fatores Fisicos</h3>
+            <div class="question-grid">
+                <div class="q-item">
+                    <label>Dor de cabeca <span class="q-desc">Frequencia de dores de cabeca no cotidiano</span></label>
+                    {{ form.headache }}
+                </div>
+                <div class="q-item">
+                    <label>Pressao arterial <span class="q-desc">Se souber, informe. Caso contrario, deixe em branco.</span></label>
+                    {{ form.blood_pressure }}
+                </div>
+                <div class="q-item">
+                    <label>Qualidade do sono <span class="q-desc">Como voce avalia seu sono de forma geral</span></label>
+                    {{ form.sleep_quality }}
+                </div>
+                <div class="q-item">
+                    <label>Problemas respiratorios <span class="q-desc">Falta de ar ou desconforto ao respirar</span></label>
+                    {{ form.breathing_problem }}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Fatores Ambientais</h3>
+            <div class="question-grid">
+                <div class="q-item">
+                    <label>Nivel de ruido <span class="q-desc">Ruido no ambiente onde estuda ou mora</span></label>
+                    {{ form.noise_level }}
+                </div>
+                <div class="q-item">
+                    <label>Condicoes de moradia <span class="q-desc">Espaco, conforto e infraestrutura da sua casa</span></label>
+                    {{ form.living_conditions }}
+                </div>
+                <div class="q-item">
+                    <label>Seguranca <span class="q-desc">Sensacao de seguranca na sua regiao</span></label>
+                    {{ form.safety }}
+                </div>
+                <div class="q-item">
+                    <label>Necessidades basicas <span class="q-desc">Acesso a alimentacao, agua e energia</span></label>
+                    {{ form.basic_needs }}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Fatores Academicos</h3>
+            <div class="question-grid">
+                <div class="q-item">
+                    <label>Desempenho academico <span class="q-desc">Como voce avalia suas notas e aprendizados</span></label>
+                    {{ form.academic_performance }}
+                </div>
+                <div class="q-item">
+                    <label>Carga de estudos <span class="q-desc">Volume de tarefas e estudos que precisa cumprir</span></label>
+                    {{ form.study_load }}
+                </div>
+                <div class="q-item">
+                    <label>Relacao professor-aluno <span class="q-desc">Comunicacao e convivencia com professores</span></label>
+                    {{ form.teacher_student_relationship }}
+                </div>
+                <div class="q-item">
+                    <label>Preocupacao com carreira <span class="q-desc">Nivel de preocupacao com o futuro profissional</span></label>
+                    {{ form.future_career_concerns }}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Fatores Sociais</h3>
+            <div class="question-grid">
+                <div class="q-item">
+                    <label>Suporte social <span class="q-desc">Apoio que recebe de familia e amigos</span></label>
+                    {{ form.social_support }}
+                </div>
+                <div class="q-item">
+                    <label>Pressao dos colegas <span class="q-desc">Pressao que sente do grupo social</span></label>
+                    {{ form.peer_pressure }}
+                </div>
+                <div class="q-item">
+                    <label>Atividades extracurriculares <span class="q-desc">Participacao em esportes, arte, cursos, etc</span></label>
+                    {{ form.extracurricular_activities }}
+                </div>
+                <div class="q-item">
+                    <label>Bullying <span class="q-desc">Frequencia de situacoes de bullying sofridas</span></label>
+                    {{ form.bullying }}
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:8px;">
+            <button type="button" class="btn btn-secondary" style="flex:1;" onclick="gerarRevisao()">Revisar Respostas</button>
+            <button type="submit" class="btn btn-primary" style="flex:1;">Enviar Respostas</button>
+        </div>
+    </form>
+
+    <div id="revisaoModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h3>Revisao das Respostas</h3>
+            <div id="revisaoBody"></div>
+            <div style="display:flex;gap:10px;margin-top:16px;">
+                <button class="btn btn-secondary" style="flex:1;" onclick="fecharRevisao()">Voltar</button>
+                <button class="btn btn-primary" style="flex:1;" onclick="enviar()">Confirmar e Enviar</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function gerarRevisao() {
+    var nomes = {};
+    document.querySelectorAll('.q-item label').forEach(function(l) {
+        var txt = l.textContent.replace(l.querySelector('.q-desc')?.textContent || '', '').trim();
+        var inp = l.closest('.q-item').querySelector('input');
+        if (inp) nomes[inp.name] = txt;
+    });
+    var html = '<table class="review-table"><thead><tr><th>Campo</th><th>Valor</th></tr></thead><tbody>';
+    html += '<tr><td>Nome</td><td>' + (document.getElementById('id_nome_aluno')?.value || '') + '</td></tr>';
+    html += '<tr><td>RA</td><td>' + (document.getElementById('id_ra')?.value || '') + '</td></tr>';
+    html += '<tr><td>Turma</td><td>' + (document.getElementById('id_turma')?.value || '') + '</td></tr>';
+    document.querySelectorAll('.scale-input').forEach(function(inp) {
+        var nome = inp.name;
+        var rotulo = nomes[nome] || nome;
+        var v = inp.value;
+        html += '<tr><td>' + rotulo + '</td><td>' + (v || '<em>em branco</em>') + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('revisaoBody').innerHTML = html;
+    document.getElementById('revisaoModal').style.display = 'flex';
+}
+
+function fecharRevisao() {
+    document.getElementById('revisaoModal').style.display = 'none';
+}
+
+function enviar() {
+    document.getElementById('revisaoModal').style.display = 'none';
+    document.getElementById('mainForm').submit();
+}
+
+window.addEventListener('click', function(e) {
+    var modal = document.getElementById('revisaoModal');
+    if (e.target === modal) fecharRevisao();
+});
+</script>
+{% endblock %}
