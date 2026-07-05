@@ -1,18 +1,28 @@
 from django.contrib import admin
-from .models import AvaliacaoEstresse
+from django.contrib.auth.admin import UserAdmin
+from .models import AvaliacaoEstresse, Usuario
+
+
+@admin.register(Usuario)
+class UsuarioAdmin(UserAdmin):
+    list_display = ("username", "email", "role", "is_active")
+    list_filter = ("role",)
+    fieldsets = UserAdmin.fieldsets + (("Acesso ao sistema", {"fields": ("role",)}),)
+    add_fieldsets = UserAdmin.add_fieldsets + (("Acesso ao sistema", {"fields": ("role",)}),)
 
 
 @admin.register(AvaliacaoEstresse)
 class AvaliacaoEstresseAdmin(admin.ModelAdmin):
     list_display = (
         "id",
+        "estudante",
         "nome_estudante",
         "nivel_estresse_previsto",
         "score_confianca",
         "criado_em",
     )
     list_filter = ("nivel_estresse_previsto", "criado_em")
-    search_fields = ("nome_estudante",)
+    search_fields = ("nome_estudante", "estudante__username")
     readonly_fields = (
         "nivel_estresse_previsto",
         "mensagem_explicativa",

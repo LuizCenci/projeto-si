@@ -17,6 +17,12 @@
             <p class="brand-subtitle">
                 Monitoramento preditivo do nível de estresse de estudantes universitários
             </p>
+            {% if user.is_authenticated %}
+            <div class="session-bar">
+                <span>{{ user }} · {{ user.get_role_display }}</span>
+                <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="link-button">Sair</button></form>
+            </div>
+            {% endif %}
         </div>
     </header>
 

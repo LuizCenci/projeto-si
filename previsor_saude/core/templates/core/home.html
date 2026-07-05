@@ -46,11 +46,6 @@
         <form method="post" novalidate>
             {% csrf_token %}
 
-            <div class="form-field">
-                {{ form.nome_estudante.label_tag }}
-                {{ form.nome_estudante }}
-            </div>
-
             <div class="form-grid">
                 <div class="form-field">
                     {{ form.horas_sono.label_tag }}

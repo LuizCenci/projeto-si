@@ -1,0 +1,20 @@
+{% extends "core/base.html" %}
+{% block title %}Avaliações | Universidade{% endblock %}
+{% block content %}
+<section class="card">
+    <h1>Avaliações dos estudantes</h1>
+    <p>Dados restritos a usuários com perfil Universidade.</p>
+    <div class="table-wrap"><table>
+        <thead><tr><th>Data</th><th>RA</th><th>Estudante</th><th>Sono</th><th>Estudo</th><th>Dor</th><th>Atividade</th><th>Qual. sono</th><th>Ansiedade</th><th>Prazos</th><th>Cansaço</th><th>IA</th><th>Confiança</th></tr></thead>
+        <tbody>
+        {% for item in avaliacoes %}<tr>
+            <td>{{ item.criado_em|date:"d/m/Y H:i" }}</td><td>{{ item.estudante.username|default:"Legado" }}</td>
+            <td>{{ item.nome_estudante|default:item.estudante }}</td><td>{{ item.horas_sono }}</td><td>{{ item.carga_estudo }}</td>
+            <td>{{ item.frequencia_dor_cabeca }}</td><td>{{ item.nivel_atividade_fisica }}</td><td>{{ item.qualidade_sono }}</td>
+            <td>{{ item.nivel_ansiedade }}</td><td>{{ item.pressao_prazos }}</td><td>{{ item.frequencia_cansaco }}</td>
+            <td>{{ item.get_nivel_estresse_previsto_display|default:"Pendente" }}</td><td>{% if item.score_confianca != None %}{{ item.score_confianca|floatformat:2 }}{% else %}—{% endif %}</td>
+        </tr>{% empty %}<tr><td colspan="13">Nenhuma avaliação registrada.</td></tr>{% endfor %}
+        </tbody>
+    </table></div>
+</section>
+{% endblock %}

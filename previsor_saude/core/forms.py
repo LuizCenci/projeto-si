@@ -48,7 +48,6 @@ class AvaliacaoEstresseForm(forms.ModelForm):
     class Meta:
         model = AvaliacaoEstresse
         fields = [
-            "nome_estudante",
             "horas_sono",
             "carga_estudo",
             "frequencia_dor_cabeca",

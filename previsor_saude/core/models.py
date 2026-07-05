@@ -1,4 +1,31 @@
+from django.contrib.auth.models import AbstractUser, UserManager
+from django.conf import settings
 from django.db import models
+
+
+class RoleUsuario(models.TextChoices):
+    ADMIN = "ADMIN", "Administrador"
+    ESTUDANTE = "ESTUDANTE", "Estudante"
+    UNIVERSIDADE = "UNIVERSIDADE", "Universidade"
+
+
+class UsuarioManager(UserManager):
+    def create_user(self, username, email=None, password=None, **extra_fields):
+        if not extra_fields.get("role"):
+            raise ValueError("A role é obrigatória ao criar um usuário.")
+        return super().create_user(username, email, password, **extra_fields)
+
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
+        extra_fields["role"] = RoleUsuario.ADMIN
+        return super().create_superuser(username, email, password, **extra_fields)
+
+
+class Usuario(AbstractUser):
+    role = models.CharField("Role", max_length=15, choices=RoleUsuario.choices)
+    objects = UsuarioManager()
+
+    def __str__(self):
+        return self.get_full_name() or self.username
 
 
 class NivelEstresse(models.TextChoices):
@@ -15,6 +42,10 @@ class AvaliacaoEstresse(models.Model):
     """
 
     # --- Dados de identificação (opcional) ---
+    estudante = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="avaliacoes", null=True, blank=True,
+    )
     nome_estudante = models.CharField(
         "Nome (opcional)", max_length=150, blank=True
     )
