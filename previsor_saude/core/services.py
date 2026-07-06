@@ -34,6 +34,58 @@ MENSAGENS = {
 MAPPING_NIVEL = {0: "BAIXO", 1: "MEDIO", 2: "ALTO"}
 MAPPING_RISCO = {0: "Baixo", 1: "Médio", 2: "Alto"}
 
+# Mapeamento do range do formulário (0-5) para o range original do dataset
+# O dataset tem escalas diferentes por feature; o form usa 0-5 universal.
+ORIGINAL_RANGES = {
+    "anxiety_level": (0, 21),
+    "self_esteem": (0, 30),
+    "mental_health_history": (0, 1),
+    "depression": (0, 27),
+    "headache": (0, 5),
+    "blood_pressure": (1, 3),
+    "sleep_quality": (0, 5),
+    "breathing_problem": (0, 5),
+    "noise_level": (0, 5),
+    "living_conditions": (0, 5),
+    "safety": (0, 5),
+    "basic_needs": (0, 5),
+    "academic_performance": (0, 5),
+    "study_load": (0, 5),
+    "teacher_student_relationship": (0, 5),
+    "future_career_concerns": (0, 5),
+    "social_support": (0, 3),
+    "peer_pressure": (0, 5),
+    "extracurricular_activities": (0, 5),
+    "bullying": (0, 5),
+}
+
+FEATURE_ORDER = [
+    "anxiety_level", "self_esteem", "mental_health_history", "depression",
+    "headache", "blood_pressure", "sleep_quality", "breathing_problem",
+    "noise_level", "living_conditions", "safety", "basic_needs",
+    "academic_performance", "study_load", "teacher_student_relationship",
+    "future_career_concerns", "social_support", "peer_pressure",
+    "extracurricular_activities", "bullying",
+]
+
+
+def _mapear_form_para_original(form_val: float, original_min: int, original_max: int) -> float:
+    if original_min == original_max:
+        return float(original_min)
+    proporcao = form_val / 5.0
+    return round(original_min + proporcao * (original_max - original_min))
+
+
+def _converter_features(features_list: list) -> list:
+    if len(features_list) != len(FEATURE_ORDER):
+        return features_list
+    convertidos = []
+    for i, nome in enumerate(FEATURE_ORDER):
+        r = ORIGINAL_RANGES[nome]
+        convertidos.append(_mapear_form_para_original(float(features_list[i]), r[0], r[1]))
+    return convertidos
+
+
 _modelo = None
 _scaler = None
 
@@ -62,6 +114,7 @@ def prever_com_features(features: list) -> tuple:
     carregar_modelo()
     if _modelo is None:
         return 1, "Médio"
+    features = _converter_features(features)
     X = np.array(features).reshape(1, -1)
     if _scaler is not None:
         X = _scaler.transform(X)
@@ -72,16 +125,10 @@ def prever_com_features(features: list) -> tuple:
 
 
 def _prever_com_modelo(dados: dict) -> ResultadoPredicao:
-    FEATURE_ORDER = [
-        "anxiety_level", "self_esteem", "mental_health_history", "depression",
-        "headache", "blood_pressure", "sleep_quality", "breathing_problem",
-        "noise_level", "living_conditions", "safety", "basic_needs",
-        "academic_performance", "study_load", "teacher_student_relationship",
-        "future_career_concerns", "social_support", "peer_pressure",
-        "extracurricular_activities", "bullying",
-    ]
     try:
-        X = np.array([[float(dados.get(f, 0)) for f in FEATURE_ORDER]])
+        raw = [float(dados.get(f, 2)) for f in FEATURE_ORDER]
+        features = _converter_features(raw)
+        X = np.array(features).reshape(1, -1)
         if _scaler is not None:
             X = _scaler.transform(X)
         pred = int(_modelo.predict(X)[0])

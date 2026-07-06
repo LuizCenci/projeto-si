@@ -4,10 +4,22 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.db.models import Count, Q
+from django.contrib import messages
 
 from .forms import AvaliacaoEstresseForm, LoginForm, RespostaEstudanteForm, FEATURE_FIELDS
 from .models import FormularioGerado, RespostaEstudante
 from .services import prever_nivel_estresse, prever_com_features
+
+
+FEATURE_FIELDS_DISPLAY = [
+    "anxiety_level", "self_esteem", "mental_health_history",
+    "depression", "headache", "blood_pressure",
+    "sleep_quality", "breathing_problem", "noise_level",
+    "living_conditions", "safety", "basic_needs",
+    "academic_performance", "study_load", "teacher_student_relationship",
+    "future_career_concerns", "social_support", "peer_pressure",
+    "extracurricular_activities", "bullying",
+]
 
 
 class HomeView(View):
@@ -108,18 +120,32 @@ class DashboardView(View):
         request_host = request.get_host()
         base_url = f"{request_schema}://{request_host}"
 
-        return render(request, self.template_name, {
+        ctx = {
             "formularios": formularios,
             "total_respostas": total_respostas,
             "respostas": respostas[:50],
             "distribuicao": distribuicao,
             "turmas": turmas,
             "base_url": base_url,
-        })
+        }
+
+        toast = request.session.pop("toast_auto", None)
+        if toast:
+            ctx["toast_auto"] = toast
+
+        return render(request, self.template_name, ctx)
 
     def post(self, request):
         if "gerar_formulario" in request.POST:
             formulario = FormularioGerado.objects.create(criado_por=request.user)
+            url = f"{request.scheme}://{request.get_host()}/form/{formulario.pk}/"
+            request.session["toast_auto"] = {
+                "title": "Formulário criado!",
+                "message": "O link foi copiado automaticamente para a área de transferência.",
+                "type": "success",
+                "link": url,
+            }
+            request.session.modified = True
             return redirect("core:dashboard")
         return self.get(request)
 
@@ -183,9 +209,9 @@ class FormularioEstudanteView(View):
                     "nivel": nivel_predito,
                     "nivel_risco": nivel_risco,
                     "mensagem": {
-                        0: "Continue mantendo seus habitos saudaveis!",
+                        0: "Continue mantendo seus hábitos saudáveis!",
                         1: "Fique atento aos sinais. Considere buscar apoio.",
-                        2: "E recomendado buscar ajuda profissional.",
+                        2: "É recomendado buscar ajuda profissional.",
                     }.get(nivel_predito, ""),
                 },
             })
@@ -193,4 +219,60 @@ class FormularioEstudanteView(View):
         return render(request, self.template_name, {
             "form": form,
             "formulario": formulario,
+        })
+
+
+@method_decorator(login_required, name="dispatch")
+class DetalhesFormularioView(View):
+    template_name = "core/detalhes_formulario.html"
+
+    def get(self, request, pk):
+        formulario = get_object_or_404(FormularioGerado, pk=pk, criado_por=request.user)
+        respostas = RespostaEstudante.objects.filter(formulario=formulario)
+
+        risco = request.GET.get("risco", "")
+        turma = request.GET.get("turma", "")
+        ordenar = request.GET.get("ordenar", "-data_submissao")
+
+        if risco:
+            respostas = respostas.filter(nivel_risco__iexact=risco)
+        if turma:
+            respostas = respostas.filter(turma__iexact=turma)
+
+        ordenar_valido = {
+            "-data_submissao", "data_submissao",
+            "nivel_risco", "-nivel_risco",
+            "turma", "-turma",
+            "nome_aluno", "-nome_aluno",
+        }
+        if ordenar not in ordenar_valido:
+            ordenar = "-data_submissao"
+        respostas = respostas.order_by(ordenar)
+
+        riscos_disponiveis = (
+            RespostaEstudante.objects.filter(formulario=formulario)
+            .values_list("nivel_risco", flat=True)
+            .distinct()
+            .order_by("nivel_risco")
+        )
+        turmas_disponiveis = (
+            RespostaEstudante.objects.filter(formulario=formulario)
+            .values_list("turma", flat=True)
+            .distinct()
+            .order_by("turma")
+        )
+
+        request_schema = request.scheme
+        request_host = request.get_host()
+        base_url = f"{request_schema}://{request_host}"
+
+        return render(request, self.template_name, {
+            "formulario": formulario,
+            "respostas": respostas,
+            "total_respostas": respostas.count(),
+            "riscos_disponiveis": riscos_disponiveis,
+            "turmas_disponiveis": turmas_disponiveis,
+            "feature_fields": FEATURE_FIELDS_DISPLAY,
+            "base_url": base_url,
+            "ordenar": ordenar,
         })

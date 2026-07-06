@@ -2,45 +2,74 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Sistema de Monitoramento de Estresse{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}EstudaCare · Bem-Estar Acadêmico{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
 </head>
 <body>
-    <header class="app-header">
-        <div class="container">
-            <div class="brand">
-                <span class="brand-icon">🧠</span>
-                <span class="brand-name">Bem-Estar Acadêmico</span>
-            </div>
-            <nav class="app-nav">
-                <a href="{% url 'core:home' %}" class="nav-link">Início</a>
-                {% if user.is_authenticated %}
-                    <a href="{% url 'core:dashboard' %}" class="nav-link">Dashboard</a>
-                    <a href="{% url 'core:logout' %}" class="nav-link">Sair ({{ user.username }})</a>
-                {% else %}
-                    <a href="{% url 'core:login' %}" class="nav-link">Acesso Diretor</a>
-                {% endif %}
-            </nav>
-        </div>
-    </header>
-
-    <main class="container">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="message message-{{ message.tags }}">{{ message }}</div>
-            {% endfor %}
+  <header class="app-header">
+    <div class="container-wide">
+      <a href="{% url 'core:home' %}" class="brand">
+        <span class="brand-icon">E</span>
+        <span class="brand-name">EstudaCare</span>
+      </a>
+      <nav class="app-nav">
+        <a href="{% url 'core:home' %}" class="nav-link">Início</a>
+        {% if user.is_authenticated %}
+          <a href="{% url 'core:dashboard' %}" class="nav-link">Dashboard</a>
+          <a href="{% url 'core:logout' %}" class="nav-link">Sair</a>
+        {% else %}
+          <a href="{% url 'core:login' %}" class="nav-link">Acesso Diretor</a>
         {% endif %}
-        {% block content %}{% endblock %}
-    </main>
+      </nav>
+    </div>
+  </header>
 
-    <footer class="app-footer">
-        <div class="container">
-            <p>
-                MVP acadêmico &middot; UTFPR Dois Vizinhos &middot; Engenharia de Software
-            </p>
+  <main class="container-wide">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="card" style="border-color: rgba(56,189,248,0.3); text-align:center; padding:12px 20px;">
+          <span style="color:var(--primary);font-weight:500;">{{ message }}</span>
         </div>
-    </footer>
+      {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <footer class="app-footer">
+    <div class="container">
+      <p>EstudaCare </p>
+    </div>
+  </footer>
+
+  <script>
+  function showToast(title, message, type) {
+    var container = document.getElementById('toast-container');
+    var el = document.createElement('div');
+    el.className = 'toast toast-' + (type || 'info');
+    var icon = type === 'success' ? '&#x2713;' : '&#x24D8;';
+    el.innerHTML =
+      '<span class="toast-icon">' + icon + '</span>' +
+      '<div class="toast-content">' +
+        '<div class="toast-title">' + title + '</div>' +
+        '<div class="toast-message">' + message + '</div>' +
+      '</div>' +
+      '<button class="toast-close" onclick="dismissToast(this)">&times;</button>';
+    container.appendChild(el);
+    setTimeout(function() { dismissToast(el.querySelector('.toast-close')); }, 6000);
+  }
+  function dismissToast(btn) {
+    var el = btn ? btn.closest('.toast') : null;
+    if (!el) return;
+    el.classList.add('fade-out');
+    setTimeout(function() { el.remove(); }, 300);
+  }
+  </script>
 </body>
 </html>

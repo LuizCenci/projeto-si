@@ -1,0 +1,115 @@
+{% extends "core/base.html" %}
+{% load core_extras %}
+{% block title %}Formulário · EstudaCare{% endblock %}
+{% block content %}
+<a href="{% url 'core:dashboard' %}" class="back-link">&larr; Voltar ao Dashboard</a>
+
+<div class="dash-header">
+  <div>
+    <h2>Formulário <code style="font-size:0.85rem;color:var(--primary);">{{ formulario.id|truncatechars:12 }}</code></h2>
+    <p style="color:var(--text-secondary);font-size:0.85rem;margin:4px 0 0;">
+      Criado em {{ formulario.criado_em|date:"d/m/Y H:i" }} &middot;
+      {% if formulario.esta_valido %}
+        <span class="risk-badge risk-baixo">Ativo</span>
+      {% else %}
+        <span class="risk-badge risk-alto">Expirado</span>
+      {% endif %}
+      &middot; {{ total_respostas }} resposta{{ total_respostas|pluralize:"s" }}
+    </p>
+  </div>
+  <div class="link-group">
+    {% url 'core:formulario_estudante' pk=formulario.id as rel_link %}
+    <input class="link-input" value="{{ base_url }}{{ rel_link }}" readonly id="form-link" style="width:280px;">
+    <button class="btn btn-primary btn-sm" onclick="copiarLink()">Copiar Link</button>
+  </div>
+</div>
+
+<form method="get" class="filters-bar">
+  <label for="risco">Risco:</label>
+  <select name="risco" id="risco">
+    <option value="">Todos</option>
+    {% for r in riscos_disponiveis %}
+      <option value="{{ r }}" {% if request.GET.risco == r %}selected{% endif %}>{{ r }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="turma">Turma:</label>
+  <select name="turma" id="turma">
+    <option value="">Todas</option>
+    {% for t in turmas_disponiveis %}
+      <option value="{{ t }}" {% if request.GET.turma == t %}selected{% endif %}>{{ t }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="ordenar">Ordenar:</label>
+  <select name="ordenar" id="ordenar">
+    <option value="-data_submissao" {% if ordenar == '-data_submissao' %}selected{% endif %}>Mais recentes</option>
+    <option value="data_submissao" {% if ordenar == 'data_submissao' %}selected{% endif %}>Mais antigos</option>
+    <option value="nivel_risco" {% if ordenar == 'nivel_risco' %}selected{% endif %}>Risco (A-Z)</option>
+    <option value="-nivel_risco" {% if ordenar == '-nivel_risco' %}selected{% endif %}>Risco (Z-A)</option>
+    <option value="turma" {% if ordenar == 'turma' %}selected{% endif %}>Turma (A-Z)</option>
+    <option value="-turma" {% if ordenar == '-turma' %}selected{% endif %}>Turma (Z-A)</option>
+    <option value="nome_aluno" {% if ordenar == 'nome_aluno' %}selected{% endif %}>Nome (A-Z)</option>
+    <option value="-nome_aluno" {% if ordenar == '-nome_aluno' %}selected{% endif %}>Nome (Z-A)</option>
+  </select>
+
+  <button type="submit" class="btn btn-secondary btn-sm">Aplicar</button>
+  {% if request.GET.risco or request.GET.turma or request.GET.ordenar %}
+    <a href="{% url 'core:detalhes_formulario' pk=formulario.id %}" class="btn btn-ghost btn-sm">Limpar</a>
+  {% endif %}
+</form>
+
+{% if respostas %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>RA</th>
+          <th>Turma</th>
+          <th>Risco</th>
+          {% for feat in feature_fields %}
+            <th title="{{ feat }}">{{ feat|truncatechars:12 }}</th>
+          {% endfor %}
+          <th>Data</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in respostas %}
+        <tr>
+          <td style="font-weight:500;">{{ r.nome_aluno }}</td>
+          <td>{{ r.ra }}</td>
+          <td>{{ r.turma }}</td>
+          <td>
+            <span class="risk-badge risk-{{ r.nivel_risco|lower }}">
+              {{ r.get_nivel_risco_display }}
+            </span>
+          </td>
+          {% for feat in feature_fields %}
+            <td style="text-align:center;">{{ r|get_attr:feat }}</td>
+          {% endfor %}
+          <td>{{ r.data_submissao|date:"d/m/Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <p class="empty">Nenhuma resposta encontrada para os filtros selecionados.</p>
+</div>
+{% endif %}
+
+<script>
+function copiarLink() {
+  var input = document.getElementById('form-link');
+  input.select();
+  input.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(input.value).then(function() {
+    showToast('Link copiado!', 'O link do formulário foi copiado para a área de transferência.', 'success');
+  });
+}
+</script>
+{% endblock %}
