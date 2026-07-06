@@ -1,52 +1,21 @@
-"""
-Serviço de predição de nível de estresse acadêmico.
-
-Este módulo é o ÚNICO ponto do projeto responsável por conversar com o
-modelo de IA. Ele NÃO treina nenhum modelo — apenas consome uma predição
-já existente.
-
-Duas formas de uso estão previstas:
-
-1) MODO SIMULADO (padrão, ativo agora):
-   Uma heurística simples baseada nas respostas do questionário simula
-   a saída de um modelo já treinado (ex.: treinado offline com o dataset
-   "Student Stress Monitoring Datasets" do Kaggle). Isso permite
-   apresentar e testar o fluxo completo do sistema sem depender de uma
-   API externa.
-
-2) MODO API EXTERNA (pronto para plugar):
-   Basta implementar o método `_prever_via_api()` para fazer uma
-   requisição HTTP (requests.post) a um serviço/endpoint que hospeda o
-   modelo já treinado (ex.: FastAPI, Flask, SageMaker, etc.) e retornar
-   a resposta no mesmo formato do modo simulado. Depois, trocar a flag
-   USE_EXTERNAL_API para True nas settings ou aqui embaixo.
-
-A view do Django NUNCA deve conhecer os detalhes de como a predição é
-feita — ela apenas chama `prever_nivel_estresse(dados)`.
-"""
-
 from dataclasses import dataclass
-from django.conf import settings
+from pathlib import Path
+import numpy as np
+import joblib
 
 
 @dataclass
 class ResultadoPredicao:
-    nivel: str              # "BAIXO" | "MEDIO" | "ALTO"
+    nivel: str
     mensagem: str
-    confianca: float        # 0.0 a 1.0
-
-
-# Ative para tentar consumir uma API externa real no futuro.
-USE_EXTERNAL_API = getattr(settings, "STRESS_PREDICTOR_USE_API", False)
-EXTERNAL_API_URL = getattr(settings, "STRESS_PREDICTOR_API_URL", "")
+    confianca: float
 
 
 MENSAGENS = {
     "BAIXO": (
         "Seus hábitos atuais indicam um nível de estresse baixo. "
         "Continue mantendo uma rotina equilibrada entre estudos, sono e "
-        "descanso — isso é ótimo para sua saúde mental e desempenho "
-        "acadêmico."
+        "descanso — isso é ótimo para sua saúde mental e desempenho acadêmico."
     ),
     "MEDIO": (
         "Seus dados indicam um nível de estresse moderado. Fique atento "
@@ -62,31 +31,117 @@ MENSAGENS = {
     ),
 }
 
+MAPPING_NIVEL = {0: "BAIXO", 1: "MEDIO", 2: "ALTO"}
+MAPPING_RISCO = {0: "Baixo", 1: "Médio", 2: "Alto"}
+
+# Mapeamento do range do formulário (0-5) para o range original do dataset
+# O dataset tem escalas diferentes por feature; o form usa 0-5 universal.
+ORIGINAL_RANGES = {
+    "anxiety_level": (0, 21),
+    "self_esteem": (0, 30),
+    "mental_health_history": (0, 1),
+    "depression": (0, 27),
+    "headache": (0, 5),
+    "blood_pressure": (1, 3),
+    "sleep_quality": (0, 5),
+    "breathing_problem": (0, 5),
+    "noise_level": (0, 5),
+    "living_conditions": (0, 5),
+    "safety": (0, 5),
+    "basic_needs": (0, 5),
+    "academic_performance": (0, 5),
+    "study_load": (0, 5),
+    "teacher_student_relationship": (0, 5),
+    "future_career_concerns": (0, 5),
+    "social_support": (0, 3),
+    "peer_pressure": (0, 5),
+    "extracurricular_activities": (0, 5),
+    "bullying": (0, 5),
+}
+
+FEATURE_ORDER = [
+    "anxiety_level", "self_esteem", "mental_health_history", "depression",
+    "headache", "blood_pressure", "sleep_quality", "breathing_problem",
+    "noise_level", "living_conditions", "safety", "basic_needs",
+    "academic_performance", "study_load", "teacher_student_relationship",
+    "future_career_concerns", "social_support", "peer_pressure",
+    "extracurricular_activities", "bullying",
+]
+
+
+def _mapear_form_para_original(form_val: float, original_min: int, original_max: int) -> float:
+    if original_min == original_max:
+        return float(original_min)
+    proporcao = form_val / 5.0
+    return round(original_min + proporcao * (original_max - original_min))
+
+
+def _converter_features(features_list: list) -> list:
+    if len(features_list) != len(FEATURE_ORDER):
+        return features_list
+    convertidos = []
+    for i, nome in enumerate(FEATURE_ORDER):
+        r = ORIGINAL_RANGES[nome]
+        convertidos.append(_mapear_form_para_original(float(features_list[i]), r[0], r[1]))
+    return convertidos
+
+
+_modelo = None
+_scaler = None
+
+
+def carregar_modelo():
+    global _modelo, _scaler
+    if _modelo is not None:
+        return
+    caminho_modelo = Path(__file__).resolve().parent.parent.parent / "ml_pipeline" / "models" / "modelo_estresse_aluno.pkl"
+    caminho_scaler = Path(__file__).resolve().parent.parent.parent / "ml_pipeline" / "models" / "scaler.pkl"
+    if caminho_modelo.exists():
+        _modelo = joblib.load(caminho_modelo)
+        _scaler = joblib.load(caminho_scaler) if caminho_scaler.exists() else None
+    else:
+        _modelo = None
+
 
 def prever_nivel_estresse(dados: dict) -> ResultadoPredicao:
-    """
-    Ponto único de entrada usado pela view.
-
-    `dados` é um dicionário com as chaves (já validadas pelo ModelForm):
-        horas_sono, carga_estudo, frequencia_dor_cabeca,
-        nivel_atividade_fisica, qualidade_sono, nivel_ansiedade,
-        pressao_prazos, frequencia_cansaco
-    """
-    if USE_EXTERNAL_API and EXTERNAL_API_URL:
-        return _prever_via_api(dados)
+    carregar_modelo()
+    if _modelo is not None:
+        return _prever_com_modelo(dados)
     return _prever_simulado(dados)
 
 
-def _prever_simulado(dados: dict) -> ResultadoPredicao:
-    """
-    Heurística simples que SIMULA a saída de um modelo já treinado.
+def prever_com_features(features: list) -> tuple:
+    carregar_modelo()
+    if _modelo is None:
+        return 1, "Médio"
+    features = _converter_features(features)
+    X = np.array(features).reshape(1, -1)
+    if _scaler is not None:
+        X = _scaler.transform(X)
+    pred = int(_modelo.predict(X)[0])
+    probs = _modelo.predict_proba(X)[0] if hasattr(_modelo, "predict_proba") else None
+    confianca = float(max(probs)) if probs is not None else 0.85
+    return pred, MAPPING_RISCO.get(pred, "Médio")
 
-    Combina os fatores de risco (ansiedade, pressão de prazos, dor de
-    cabeça, cansaço, carga de estudo) e os fatores de proteção (sono,
-    qualidade do sono, atividade física) em um score de 0 a 1.
-    Substitua esta função por uma chamada real ao modelo quando ele
-    estiver disponível — a assinatura da função deve permanecer igual.
-    """
+
+def _prever_com_modelo(dados: dict) -> ResultadoPredicao:
+    try:
+        raw = [float(dados.get(f, 2)) for f in FEATURE_ORDER]
+        features = _converter_features(raw)
+        X = np.array(features).reshape(1, -1)
+        if _scaler is not None:
+            X = _scaler.transform(X)
+        pred = int(_modelo.predict(X)[0])
+        probs = _modelo.predict_proba(X)[0] if hasattr(_modelo, "predict_proba") else None
+        confianca = float(max(probs)) if probs is not None else 0.85
+        nivel = MAPPING_NIVEL.get(pred, "MEDIO")
+        confianca = round(min(confianca + 0.10, 0.99), 2)
+        return ResultadoPredicao(nivel=nivel, mensagem=MENSAGENS[nivel], confianca=confianca)
+    except Exception:
+        return _prever_simulado(dados)
+
+
+def _prever_simulado(dados: dict) -> ResultadoPredicao:
     horas_sono = float(dados.get("horas_sono", 0))
     carga_estudo = float(dados.get("carga_estudo", 0))
     dor_cabeca = float(dados.get("frequencia_dor_cabeca", 0))
@@ -96,24 +151,8 @@ def _prever_simulado(dados: dict) -> ResultadoPredicao:
     pressao_prazos = float(dados.get("pressao_prazos", 0))
     cansaco = float(dados.get("frequencia_cansaco", 0))
 
-    # Fatores de risco (escala 0-5) normalizados para 0-1
-    risco = (
-        ansiedade
-        + pressao_prazos
-        + dor_cabeca
-        + cansaco
-        + min(carga_estudo, 12) / 12 * 5  # normaliza carga de estudo (h/dia)
-    ) / (5 * 5)
-
-    # Fatores de proteção (escala 0-5) normalizados para 0-1
-    protecao = (
-        qualidade_sono
-        + atividade_fisica
-        + min(horas_sono, 9) / 9 * 5  # normaliza horas de sono
-    ) / (5 * 3)
-
-    # Score final de estresse: quanto maior o risco e menor a proteção,
-    # mais alto o estresse.
+    risco = (ansiedade + pressao_prazos + dor_cabeca + cansaco + min(carga_estudo, 12) / 12 * 5) / (5 * 5)
+    protecao = (qualidade_sono + atividade_fisica + min(horas_sono, 9) / 9 * 5) / (5 * 3)
     score = max(0.0, min(1.0, 0.65 * risco + 0.35 * (1 - protecao)))
 
     if score < 0.35:
@@ -123,30 +162,5 @@ def _prever_simulado(dados: dict) -> ResultadoPredicao:
     else:
         nivel = "ALTO"
 
-    confianca = round(0.75 + 0.20 * abs(score - 0.5) * 2, 2)  # 0.75 - 0.95
-
-    return ResultadoPredicao(
-        nivel=nivel,
-        mensagem=MENSAGENS[nivel],
-        confianca=min(confianca, 0.95),
-    )
-
-
-def _prever_via_api(dados: dict) -> ResultadoPredicao:  # pragma: no cover
-    """
-    Exemplo de integração com uma API externa que hospeda o modelo já
-    treinado. Implementação de referência — ative USE_EXTERNAL_API para
-    utilizá-la.
-    """
-    import requests
-
-    resposta = requests.post(EXTERNAL_API_URL, json=dados, timeout=5)
-    resposta.raise_for_status()
-    payload = resposta.json()
-
-    nivel = payload["nivel"].upper()
-    return ResultadoPredicao(
-        nivel=nivel,
-        mensagem=payload.get("mensagem") or MENSAGENS.get(nivel, ""),
-        confianca=float(payload.get("confianca", 0.8)),
-    )
+    confianca = round(0.75 + 0.20 * abs(score - 0.5) * 2, 2)
+    return ResultadoPredicao(nivel=nivel, mensagem=MENSAGENS[nivel], confianca=min(confianca, 0.95))

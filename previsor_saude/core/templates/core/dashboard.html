@@ -1,0 +1,166 @@
+{% extends "core/base.html" %}
+{% block title %}Dashboard · EstudaCare{% endblock %}
+{% block content %}
+<div class="dash-header" style= "padding: 20px">
+  <h2>Dashboard</h2>
+  <form method="post" id="form-criar">
+    {% csrf_token %}
+    <button type="submit" name="gerar_formulario" class="btn btn-primary">+ Novo Formulário</button>
+  </form>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <span class="stat-num">{{ total_respostas }}</span>
+    <span class="stat-label">Respostas</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">{{ formularios|length }}</span>
+    <span class="stat-label">Formulários</span>
+  </div>
+</div>
+
+{% if distribuicao %}
+<div class="card">
+  <h3>Distribuição por Risco</h3>
+  {% for item in distribuicao %}
+  <div class="risk-bar">
+    <span class="risk-bar-label">{{ item.nivel_risco|default:"—" }}</span>
+    <div class="risk-bar-track">
+      <div class="risk-bar-fill bg-{{ item.nivel_risco|lower }}" style="width:{% widthratio item.total total_respostas 100 %}%;">
+        {{ item.total }}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if turmas %}
+<div class="card">
+  <h3>Respostas por Turma</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Turma</th><th>Respostas</th></tr></thead>
+      <tbody>
+        {% for t in turmas %}
+        <tr><td>{{ t.turma }}</td><td>{{ t.total }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3>Formulários</h3>
+  {% if formularios %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Criado</th>
+          <th>Validade</th>
+          <th>Status</th>
+          <th>Link</th>
+          <th>Respostas</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in formularios %}
+        {% url 'core:formulario_estudante' pk=f.id as rel_link %}
+        <tr class="{% if not f.esta_valido %}" style="opacity:0.45{% endif %}">
+          <td><code>{{ f.id|truncatechars:8 }}</code></td>
+          <td>{{ f.criado_em|date:"d/m/Y" }}</td>
+          <td>{{ f.validade|date:"d/m/Y" }}</td>
+          <td>
+            {% if f.esta_valido %}
+              <span class="risk-badge risk-baixo">Ativo</span>
+            {% else %}
+              <span class="risk-badge risk-alto">Expirado</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if f.esta_valido %}
+            <div class="link-group">
+              <input class="link-input" value="{{ base_url }}{{ rel_link }}" readonly id="link-{{ f.id }}">
+              <button class="btn btn-secondary btn-sm" onclick="copiarLink('{{ f.id }}')">Copiar</button>
+            </div>
+            {% endif %}
+          </td>
+          <td>{{ f.respostas.count }}</td>
+          <td>
+            <a href="{% url 'core:detalhes_formulario' pk=f.id %}" class="btn btn-ghost btn-sm">Detalhes</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">Nenhum formulário ainda. Clique em "Novo Formulário" para começar.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3>Últimas Respostas</h3>
+  {% if respostas %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Aluno</th>
+          <th>RA</th>
+          <th>Turma</th>
+          <th>Risco</th>
+          <th>Data</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in respostas %}
+        <tr>
+          <td>{{ r.nome_aluno }}</td>
+          <td>{{ r.ra }}</td>
+          <td>{{ r.turma }}</td>
+          <td><span class="risk-badge risk-{{ r.nivel_risco|lower }}">{{ r.get_nivel_risco_display }}</span></td>
+          <td>{{ r.data_submissao|date:"d/m/Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">Nenhuma resposta recebida.</p>
+  {% endif %}
+</div>
+
+<script>
+function copiarLink(id) {
+  var input = document.getElementById('link-' + id);
+  if (!input) return;
+  input.select();
+  input.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(input.value).then(function() {
+    showToast('Link copiado!', 'O link do formulário foi copiado para a área de transferência.', 'success');
+  });
+}
+
+{% if toast_auto %}
+document.addEventListener('DOMContentLoaded', function() {
+  showToast('{{ toast_auto.title }}', '{{ toast_auto.message }}', '{{ toast_auto.type }}');
+  {% if toast_auto.link %}
+  var linkInput = document.querySelector('.link-input');
+  if (linkInput) {
+    setTimeout(function() {
+      linkInput.select();
+      linkInput.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(linkInput.value);
+    }, 500);
+  }
+  {% endif %}
+});
+{% endif %}
+</script>
+{% endblock %}

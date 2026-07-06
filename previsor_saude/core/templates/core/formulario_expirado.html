@@ -1,0 +1,12 @@
+{% extends "core/base.html" %}
+{% block title %}Expirado · EstudaCare{% endblock %}
+{% block content %}
+<div class="card expired-page">
+  <div class="expired-icon">&#x23F3;</div>
+  <h2>Formulário Expirado</h2>
+  <p>Este formulário não está mais disponível para respostas.</p>
+  <p>O prazo de validade de <strong>2 semanas</strong> foi encerrado.</p>
+  <p>Entre em contato com a coordenação para receber um novo link.</p>
+  <a href="{% url 'core:home' %}" class="btn btn-secondary" style="margin-top:12px;">Voltar ao Início</a>
+</div>
+{% endblock %}

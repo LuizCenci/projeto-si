@@ -1,0 +1,236 @@
+{% extends "core/base.html" %}
+{% block title %}Questionário · EstudaCare{% endblock %}
+{% block content %}
+<div class="student-form-page">
+  {% if resultado %}
+  <div class="result-card">
+    <div class="result-icon">
+      {% if resultado.nivel == 0 %}&#x1F60A;{% elif resultado.nivel == 1 %}&#x1F610;{% else %}&#x1F61F;{% endif %}
+    </div>
+    <h2>Olá, {{ resultado.nome }}!</h2>
+    <p class="result-subtitle">Seu resultado foi processado pelo modelo preditivo.</p>
+    <div class="result-level">
+      <span class="risk-badge risk-{{ resultado.nivel_risco|lower }} large">
+        {% if resultado.nivel == 0 %}Baixo{% elif resultado.nivel == 1 %}Médio{% else %}Alto{% endif %}
+      </span>
+    </div>
+    <p class="result-message">{{ resultado.mensagem }}</p>
+    <p class="result-footer">Procure a coordenação do seu curso se precisar de apoio.</p>
+  </div>
+
+  {% elif ja_respondeu %}
+  <div class="card" style="text-align:center;padding:48px 24px;">
+    <div style="font-size:2.5rem;margin-bottom:12px;">&#x26A0;</div>
+    <h2>Você já respondeu este formulário</h2>
+    <p style="color:var(--text-secondary);">Cada aluno pode responder apenas uma vez por formulário. Caso precise refazer, entre em contato com a coordenação.</p>
+  </div>
+
+  {% else %}
+  <div class="form-header">
+    <h2>Questionário de Bem-Estar</h2>
+    <p>Suas respostas são confidenciais e ajudam a identificar padrões de bem-estar na sua turma.</p>
+  </div>
+
+  {% if form.errors %}
+  <div class="form-errors">
+    {% for field, errors in form.errors.items %}
+      {% for error in errors %}
+        <p>{{ field }}: {{ error }}</p>
+      {% endfor %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="post" class="styled-form" id="mainForm">
+    {% csrf_token %}
+
+    <div class="scale-info">
+      <strong>Escala:</strong> 0 = Discordo totalmente / Nada frequente &nbsp;|&nbsp; 5 = Concordo totalmente / Muito frequente
+      <br><span style="font-size:0.78rem;color:var(--text-muted);">Deixe em branco caso não saiba responder (será considerado valor neutro).</span>
+    </div>
+
+    <div class="form-section">
+      <h3><span class="section-icon">&#x1F464;</span> Identificação</h3>
+      <div class="form-row thirds">
+        <div class="form-group">
+          <label for="id_nome_aluno">Nome completo</label>
+          {{ form.nome_aluno }}
+        </div>
+        <div class="form-group">
+          <label for="id_ra">RA</label>
+          {{ form.ra }}
+        </div>
+        <div class="form-group">
+          <label for="id_turma">Turma</label>
+          {{ form.turma }}
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3><span class="section-icon">&#x1F9E0;</span> Fatores Emocionais</h3>
+      <div class="question-grid">
+        <div class="q-item">
+          <label>Ansiedade <span class="q-desc">Nível de preocupação, nervosismo ou tensão no dia a dia</span></label>
+          {{ form.anxiety_level }}
+        </div>
+        <div class="q-item">
+          <label>Autoestima <span class="q-desc">O quanto você se valoriza e confia em si mesmo</span></label>
+          {{ form.self_esteem }}
+        </div>
+        <div class="q-item">
+          <label>Histórico de saúde mental <span class="q-desc">Já teve ou tem acompanhamento psicológico</span></label>
+          {{ form.mental_health_history }}
+        </div>
+        <div class="q-item">
+          <label>Depressão <span class="q-desc">Frequência de tristeza, desânimo ou falta de interesse</span></label>
+          {{ form.depression }}
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3><span class="section-icon">&#x1F4AA;</span> Fatores Físicos</h3>
+      <div class="question-grid">
+        <div class="q-item">
+          <label>Dor de cabeça <span class="q-desc">Frequência de dores de cabeça no cotidiano</span></label>
+          {{ form.headache }}
+        </div>
+        <div class="q-item">
+          <label>Pressão arterial <span class="q-desc">Se souber, informe. Caso contrário, deixe em branco.</span></label>
+          {{ form.blood_pressure }}
+        </div>
+        <div class="q-item">
+          <label>Qualidade do sono <span class="q-desc">Como você avalia seu sono de forma geral</span></label>
+          {{ form.sleep_quality }}
+        </div>
+        <div class="q-item">
+          <label>Problemas respiratórios <span class="q-desc">Falta de ar ou desconforto ao respirar</span></label>
+          {{ form.breathing_problem }}
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3><span class="section-icon">&#x1F3E0;</span> Fatores Ambientais</h3>
+      <div class="question-grid">
+        <div class="q-item">
+          <label>Nível de ruído <span class="q-desc">Ruído no ambiente onde estuda ou mora</span></label>
+          {{ form.noise_level }}
+        </div>
+        <div class="q-item">
+          <label>Condições de moradia <span class="q-desc">Espaço, conforto e infraestrutura da sua casa</span></label>
+          {{ form.living_conditions }}
+        </div>
+        <div class="q-item">
+          <label>Segurança <span class="q-desc">Sensação de segurança na sua região</span></label>
+          {{ form.safety }}
+        </div>
+        <div class="q-item">
+          <label>Necessidades básicas <span class="q-desc">Acesso a alimentação, água e energia</span></label>
+          {{ form.basic_needs }}
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3><span class="section-icon">&#x1F393;</span> Fatores Acadêmicos</h3>
+      <div class="question-grid">
+        <div class="q-item">
+          <label>Desempenho acadêmico <span class="q-desc">Como você avalia suas notas e aprendizados</span></label>
+          {{ form.academic_performance }}
+        </div>
+        <div class="q-item">
+          <label>Carga de estudos <span class="q-desc">Volume de tarefas e estudos que precisa cumprir</span></label>
+          {{ form.study_load }}
+        </div>
+        <div class="q-item">
+          <label>Relação professor-aluno <span class="q-desc">Comunicação e convivência com professores</span></label>
+          {{ form.teacher_student_relationship }}
+        </div>
+        <div class="q-item">
+          <label>Preocupação com carreira <span class="q-desc">Nível de preocupação com o futuro profissional</span></label>
+          {{ form.future_career_concerns }}
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3><span class="section-icon">&#x1F91D;</span> Fatores Sociais</h3>
+      <div class="question-grid">
+        <div class="q-item">
+          <label>Suporte social <span class="q-desc">Apoio que recebe de família e amigos</span></label>
+          {{ form.social_support }}
+        </div>
+        <div class="q-item">
+          <label>Pressão dos colegas <span class="q-desc">Pressão que sente do grupo social</span></label>
+          {{ form.peer_pressure }}
+        </div>
+        <div class="q-item">
+          <label>Atividades extracurriculares <span class="q-desc">Participação em esportes, arte, cursos, etc</span></label>
+          {{ form.extracurricular_activities }}
+        </div>
+        <div class="q-item">
+          <label>Bullying <span class="q-desc">Frequência de situações de bullying sofridas</span></label>
+          {{ form.bullying }}
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button type="button" class="btn btn-secondary" style="flex:1;" onclick="gerarRevisao()">Revisar Respostas</button>
+      <button type="submit" class="btn btn-primary" style="flex:1;">Enviar Respostas</button>
+    </div>
+  </form>
+
+  <div id="revisaoModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+      <h3>Revisão das Respostas</h3>
+      <div id="revisaoBody"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn btn-secondary" style="flex:1;" onclick="fecharRevisao()">Voltar</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="enviar()">Confirmar e Enviar</button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function gerarRevisao() {
+  var nomes = {};
+  document.querySelectorAll('.q-item label').forEach(function(l) {
+    var txt = l.textContent.replace(l.querySelector('.q-desc')?.textContent || '', '').trim();
+    var inp = l.closest('.q-item').querySelector('input');
+    if (inp) nomes[inp.name] = txt;
+  });
+  var html = '<table class="review-table"><thead><tr><th>Campo</th><th>Valor</th></tr></thead><tbody>';
+  html += '<tr><td>Nome</td><td>' + (document.getElementById('id_nome_aluno')?.value || '') + '</td></tr>';
+  html += '<tr><td>RA</td><td>' + (document.getElementById('id_ra')?.value || '') + '</td></tr>';
+  html += '<tr><td>Turma</td><td>' + (document.getElementById('id_turma')?.value || '') + '</td></tr>';
+  document.querySelectorAll('.scale-input').forEach(function(inp) {
+    var nome = inp.name;
+    var rotulo = nomes[nome] || nome;
+    var v = inp.value;
+    html += '<tr><td>' + rotulo + '</td><td>' + (v || '<em>em branco</em>') + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('revisaoBody').innerHTML = html;
+  document.getElementById('revisaoModal').style.display = 'flex';
+}
+
+function fecharRevisao() {
+  document.getElementById('revisaoModal').style.display = 'none';
+}
+
+function enviar() {
+  document.getElementById('revisaoModal').style.display = 'none';
+  document.getElementById('mainForm').submit();
+}
+
+window.addEventListener('click', function(e) {
+  var modal = document.getElementById('revisaoModal');
+  if (e.target === modal) fecharRevisao();
+});
+</script>
+{% endblock %}

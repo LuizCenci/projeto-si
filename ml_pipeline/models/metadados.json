@@ -1,0 +1,38 @@
+{
+  "modelo": "modelo_estresse_aluno",
+  "algoritmo": "RandomForestClassifier",
+  "features": [
+    "headache",
+    "future_career_concerns",
+    "bullying",
+    "depression",
+    "anxiety_level",
+    "extracurricular_activities",
+    "study_load",
+    "noise_level",
+    "peer_pressure",
+    "breathing_problem",
+    "mental_health_history",
+    "blood_pressure",
+    "social_support",
+    "living_conditions",
+    "self_esteem",
+    "academic_performance",
+    "teacher_student_relationship",
+    "basic_needs",
+    "safety",
+    "sleep_quality"
+  ],
+  "random_state": 42,
+  "target": "stress_level",
+  "target_mapping": {
+    "0": "Baixo",
+    "1": "Médio",
+    "2": "Alto"
+  },
+  "n_amostras_treino": 516,
+  "n_amostras_teste": 129,
+  "acuracia_teste": 0.9845,
+  "f1_score_teste": 0.9835,
+  "dataset": "StressLevelDataset.csv"
+}
